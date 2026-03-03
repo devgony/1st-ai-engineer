@@ -1,0 +1,11 @@
+[project]
+name = "d9-life-coach"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "openai-agents[viz]>=0.2.6",
+    "python-dotenv>=1.1.1",
+    "streamlit>=1.48.0",
+]
