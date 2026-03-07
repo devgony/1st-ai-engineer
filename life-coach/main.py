@@ -4,7 +4,43 @@ dotenv.load_dotenv()
 from openai import OpenAI
 import asyncio
 import streamlit as st
-from agents import Agent, Runner, SQLiteSession, WebSearchTool, FileSearchTool
+import base64
+from typing import Any, cast
+
+from agents import (
+    Agent,
+    Runner,
+    SQLiteSession,
+    WebSearchTool,
+    FileSearchTool,
+    ImageGenerationTool,
+)
+from agents.items import TResponseInputItem
+
+# Workaround for openai-agents SDK bug: to_input_item() leaks extra fields from
+# Pydantic models with extra='allow', causing 400 errors on session replay.
+_VALID_INPUT_FIELDS: dict[str, set[str]] = {
+    "image_generation_call": {"id", "result", "status", "type"},
+    "web_search_call": {"id", "action", "status", "type"},
+    "file_search_call": {"id", "queries", "status", "type", "results"},
+}
+
+
+class CleanSQLiteSession(SQLiteSession):
+    async def get_items(self, limit: int | None = None) -> list[TResponseInputItem]:
+        items = await super().get_items(limit)
+        return [self._strip_output_fields(item) for item in items]
+
+    @staticmethod
+    def _strip_output_fields(item: Any) -> TResponseInputItem:
+        if not isinstance(item, dict):
+            return cast(TResponseInputItem, item)
+        item_type = item.get("type")
+        allowed = _VALID_INPUT_FIELDS.get(item_type)
+        if allowed is None:
+            return cast(TResponseInputItem, item)
+        return cast(TResponseInputItem, {k: v for k, v in item.items() if k in allowed})
+
 
 client = OpenAI()
 VECTOR_STORE_ID = dotenv.dotenv_values().get(
@@ -18,7 +54,11 @@ if "agent" not in st.session_state:
         You are a helpful assistant to encourage users like life coach.
 
         You have access to the followign tools:
+            - Image Generation Tool:
+                - If user made goals related to fitness, health, or self-development, use the image generation tool to create motivational images for the user.
+                - If user wants to visualize their goals, use the image generation tool to create vision board style images.
             - File Search Tool: 
+                - If you use this tool, say: 목표를 확인했어요: {확인된 내용}
                 - Use this tool when the user asks a question about facts related to themselves. Or when they ask questions about specific files.
                 - Always search any tips according to the user's data in the file search tool, and use the information you find to give personalized advice.
             - Web Search Tool: 
@@ -31,12 +71,20 @@ if "agent" not in st.session_state:
         tools=[
             WebSearchTool(),
             FileSearchTool(vector_store_ids=[VECTOR_STORE_ID], max_num_results=3),
+            ImageGenerationTool(
+                tool_config={
+                    "type": "image_generation",
+                    "quality": "low",
+                    "output_format": "jpeg",
+                    "partial_images": 1,
+                }
+            ),
         ],
     )
 agent = st.session_state["agent"]
 
 if "session" not in st.session_state:
-    st.session_state["session"] = SQLiteSession(
+    st.session_state["session"] = CleanSQLiteSession(
         "chat-history",
         "life-coach.db",
     )
@@ -55,12 +103,17 @@ async def paint_history():
                     if message["type"] == "message":
                         st.write(message["content"][0]["text"].replace("$", "\\$"))
         if "type" in message:
-            if message["type"] == "web_search_call":
+            message_type = message["type"]
+            if message_type == "web_search_call":
                 with st.chat_message("ai"):
                     st.write("🔍 Searched the web...")
-            elif message["type"] == "file_search_call":
+            elif message_type == "file_search_call":
                 with st.chat_message("ai"):
                     st.write("🗂️ Searched your files...")
+            elif message_type == "image_generation_call":
+                image = base64.b64decode(message["result"])
+                with st.chat_message("ai"):
+                    st.image(image)
 
 
 asyncio.run(paint_history())
@@ -90,6 +143,14 @@ def update_status(status_container, event):
             "🗂️ File search in progress...",
             "running",
         ),
+        "response.image_generation_call.generating": (
+            "🎨 Drawing image...",
+            "running",
+        ),
+        "response.image_generation_call.in_progress": (
+            "🎨 Drawing image...",
+            "running",
+        ),
         "response.completed": (" ", "complete"),
     }
 
@@ -102,6 +163,7 @@ async def run_agent(message):
     with st.chat_message("ai"):
         status_container = st.status("⏳", expanded=False)
         text_placeholder = st.empty()
+        image_placeholder = st.empty()
         response = ""
 
         stream = Runner.run_streamed(
@@ -117,6 +179,11 @@ async def run_agent(message):
                 if event.data.type == "response.output_text.delta":
                     response += event.data.delta
                     text_placeholder.write(response.replace("$", "\\$"))
+                elif event.data.type == "response.image_generation_call.partial_image":
+                    image = base64.b64decode(event.data.partial_image_b64)
+                    image_placeholder.image(image)
+                elif event.data.type == "response.completed":
+                    pass
 
 
 prompt = st.chat_input(
