@@ -7,18 +7,12 @@ from agents import (
 from my_agents.menu_agent import menu_agent
 from my_agents.order_agent import order_agent
 from my_agents.reservation_agent import reservation_agent
+from my_agents.complaints_agent import complaints_agent
 from agents.extensions.handoff_prompt import RECOMMENDED_PROMPT_PREFIX
 from agents.extensions import handoff_filters
-from models import UserAccountContext, InputGuardRailOutput, HandoffData
+from models import UserAccountContext, HandoffData
+from my_agents.input_guardrail_agent import off_topic_guardrail
 
-
-input_guardrail_agent = Agent(
-    name="Input Guardrail Agent",
-    instructions="""
-    Ensure the user's request specifically pertains to User Account details, Billing inquiries, Order information, or Technical Support issues, and is not off-topic. If the request is off-topic, return a reason for the tripwire. You can make small conversation with the user, specially at the beginning of the conversation, but don't help with requests that are not related to User Account details, Billing inquiries, Order information, or Technical Support issues.
-""",
-    output_type=InputGuardRailOutput,
-)
 
 
 def dynamic_triage_agent_instructions(
@@ -61,17 +55,28 @@ def dynamic_triage_agent_instructions(
     - 특별 행사 예약 (생일, 기념일 등)
     - "예약하고 싶어요", "예약 변경해주세요", "단체석 있나요?"
     
+    😟 불만 처리 - 다음 경우 Complaints Agent로 연결:
+    - 음식 품질 불만 (맛, 온도, 신선도 등)
+    - 서비스 불만 (직원 태도, 대기 시간 등)
+    - 주문 오류 (잘못된 메뉴, 누락된 항목 등)
+    - 위생 및 안전 문제
+    - 이전 방문 경험에 대한 불만
+    - "음식이 별로였어요", "직원이 불친절했어요", "주문이 잘못 나왔어요", "환불 받고 싶어요"
+    - 고객이 화나거나 실망한 감정을 표현하는 경우
+    
     분류 절차:
     1. 고객의 요청을 주의 깊게 듣기
     2. 요청이 불분명하면 1-2개의 확인 질문하기
-    3. 위 세 가지 카테고리 중 하나로 분류
-    4. 연결 이유를 설명: "[카테고리] 담당에게 연결해 드릴게요"
-    5. 해당 전문 에이전트로 라우팅
+    3. 위 네 가지 카테고리 중 하나로 분류
+    4. 불만 사항의 경우 먼저 공감을 표현한 후 연결: "정말 죄송합니다. 도움을 드릴 수 있는 담당자에게 연결해 드릴게요"
+    5. 그 외 요청은 연결 이유를 설명: "[카테고리] 담당에게 연결해 드릴게요"
+    6. 해당 전문 에이전트로 라우팅
     
     특별 처리:
     - VIP 고객: 연결 시 우선 서비스 안내
     - 복합 요청: 가장 먼저 필요한 것부터 처리 후 나머지 안내
     - 불명확한 요청: 라우팅 전 간단한 확인 질문
+    - 불만 고객: 절대 방어적이거나 변명하는 태도를 취하지 않으며, 공감 후 신속하게 Complaints Agent로 연결
     """
 
 
@@ -106,5 +111,9 @@ triage_agent = Agent(
         make_handoff(menu_agent),
         make_handoff(order_agent),
         make_handoff(reservation_agent),
+        make_handoff(complaints_agent),
+    ],
+    input_guardrails=[
+        off_topic_guardrail,
     ],
 )

@@ -14,10 +14,9 @@ class InputGuardRailOutput(BaseModel):
     reason: str
 
 
-class TechnicalOutputGuardRailOutput(BaseModel):
-    contains_off_topic: bool
-    contains_billing_data: bool
-    contains_account_data: bool
+class RestaurantOutputGuardRailOutput(BaseModel):
+    is_unprofessional: bool
+    exposes_internal_info: bool
     reason: str
 
 
@@ -25,4 +24,9 @@ class HandoffData(BaseModel):
     to_agent_name: str
     issue_type: str
     issue_description: str
+    reason: str
+
+
+class InputGuardRailOutput(BaseModel):
+    is_off_topic: bool
     reason: str
