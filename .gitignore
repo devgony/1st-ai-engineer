@@ -2,3 +2,4 @@
 **/__pycache__
 
 restaurant-bot/uv.lock
+restaurant-bot/.streamlit/secrets.toml
