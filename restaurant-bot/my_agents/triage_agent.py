@@ -11,7 +11,7 @@ from my_agents.complaints_agent import complaints_agent
 from agents.extensions.handoff_prompt import RECOMMENDED_PROMPT_PREFIX
 from agents.extensions import handoff_filters
 from models import UserAccountContext, HandoffData
-from my_agents.input_guardrail_agent import off_topic_guardrail
+
 
 
 
@@ -113,7 +113,5 @@ triage_agent = Agent(
         make_handoff(reservation_agent),
         make_handoff(complaints_agent),
     ],
-    input_guardrails=[
-        off_topic_guardrail,
-    ],
+
 )
