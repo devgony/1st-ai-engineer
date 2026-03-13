@@ -4,8 +4,9 @@ dotenv.load_dotenv()
 from openai import OpenAI
 import asyncio
 import streamlit as st
-from agents import Runner, SQLiteSession, InputGuardrailTripwireTriggered
+from agents import Runner, SQLiteSession, InputGuardrailTripwireTriggered, RunConfig
 from my_agents.triage_agent import triage_agent
+from my_agents.input_guardrail_agent import off_topic_guardrail
 from models import UserAccountContext
 
 client = OpenAI()
@@ -57,6 +58,7 @@ async def run_agent(message):
                 message,
                 session=session,
                 context=user_account_ctx,
+                run_config=RunConfig(input_guardrails=[off_topic_guardrail]),
             )
 
             async for event in stream.stream_events():

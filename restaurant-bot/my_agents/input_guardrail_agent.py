@@ -40,9 +40,19 @@ async def off_topic_guardrail(
     agent: Agent[Any],
     input: str | list[TResponseInputItem],
 ) -> GuardrailFunctionOutput:
+    if isinstance(input, list):
+        latest_user_message: str | list[TResponseInputItem] = input
+        for item in reversed(input):
+            if isinstance(item, dict) and item.get("role") == "user":
+                content = item.get("content", "")
+                latest_user_message = str(content) if content else ""
+                break
+    else:
+        latest_user_message = input
+
     result = await Runner.run(
         input_guardrail_agent,
-        input,
+        latest_user_message,
         context=wrapper.context,
     )
 
