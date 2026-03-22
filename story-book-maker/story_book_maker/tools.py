@@ -10,8 +10,11 @@ async def generate_images(tool_context: ToolContext):
     story_writer_output = tool_context.state.get("story_writer_output", {})
     page_drafts = story_writer_output.get("draft_pages", [])
 
+    total = len(page_drafts)
+    tool_context.state["total"] = total
     generated_images = []
     for page_id, draft_page in enumerate(page_drafts):
+        tool_context.state["page_id"] = page_id
         visual_description = draft_page.get("visual_description", "")
 
         filename = f"image_{page_id}.jpeg"

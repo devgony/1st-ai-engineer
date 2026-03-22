@@ -27,3 +27,33 @@ Visual: "보라색 하늘을 올려다보는 토끼"
 Image: [생성된 이미지가 Artifact로 저장됨]
 ...
 ```
+
+# Weekend Mission: Complete Story Book Maker
+
+## Workflow Agent를 활용하여 어린이 동화책 만들기를 완성하세요
+
+- 파이프라인에 다음 기능을 추가하세요:
+  - SequentialAgent - Writer → Illustrator 흐름을 관리
+  - ParallelAgent - 5개의 삽화를 동시에 생성
+  - Callbacks - 진행 상황 표시 ("스토리 작성 중...", "이미지 1/5 생성 중...")
+
+## 전체 파이프라인
+
+```text
+[사용자 입력: "용감한 아기 고양이 이야기"]
+                    ↓
+           [Sequential Agent]
+                    ↓
+           [Story Writer Agent]
+            - 5페이지짜리 동화 작성
+            - Agent State에 저장
+                    ↓
+           [Parallel Agent]
+            - 5개의 이미지를 동시에 생성
+            - Artifacts로 저장
+                    ↓
+    [최종 출력: 완성된 동화책]
+    - 제목
+    - 텍스트가 포함된 5페이지
+    - 각 페이지에 어울리는 5개의 삽화
+```
