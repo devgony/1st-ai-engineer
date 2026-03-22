@@ -26,3 +26,7 @@ As the Story Book Maker, you must complete the workflow in this exact order:
 
 Return the assembled tool result as your final answer. The final answer must include each page's text, visual description, and image artifact filename.
 """
+
+ASSET_GENERATOR_DESCRIPTION = """
+    should run 5 image generations in parallel, one for each page of the storybook, using the visual descriptions provided by the Story Writer Agent. Each image generation should be treated as a separate task, and the results should be collected and returned together once all images have been generated and saved as artifacts.
+"""
