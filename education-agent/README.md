@@ -1,4 +1,4 @@
-> Education Agent: Start Your Demo Day Project
+# Education Agent: Start Your Demo Day Project
 
 - 오늘의 강의: AI Agents Masterclass: From \#15.0 to r#15.5
 - 이번 주부터 데모 데이를 위한 에이전트를 만듭니다
@@ -39,3 +39,78 @@
 - LangGraph를 사용하세요.
 - 최소 2개의 작동하는 노드를 구현하세요.
 - Jupyter Notebook에 설계 문서와 코드를 포함하세요.
+
+---
+
+# Weekend Mission: Education Agent - Core Features
+
+## Education Agent에 핵심 기능을 추가하세요
+
+### 필수
+
+- 최소 3개의 노드를 구현하세요.
+- 최소 1개의 Conditional Edge를 구현하세요. (사용자 입력에 따라 다른 경로)
+- 최소 1개의 Tool을 연동하세요. (웹 검색, 파일 검색, 또는 커스텀)
+
+### 추가 기능 (선택사항)
+
+- 병렬 실행 (Send API)
+- 메모리 기능
+- 여러 개의 Tool 연동
+
+---
+
+## Implementation
+
+### Graph Architecture
+
+```
+START → diagnose_level → plan_agent ⟷ tools → generate_quiz → human_feedback → END
+                              ↑                                      ↓
+                              └──────────────── retry ───────────────┘
+```
+
+### Nodes
+
+| Node | Description |
+|---|---|
+| `diagnose_level` | Diagnoses the student's current level based on subject and self-reported proficiency using `gpt-4o-mini`. |
+| `plan_agent` | Generates a personalized 1-week study plan. Uses `ChatOpenAI.bind_tools()` so the LLM autonomously decides when to call `web_search` for real learning resources. |
+| `tools` | A `ToolNode` that executes tool calls made by `plan_agent`. Routes back to `plan_agent` after execution. |
+| `generate_quiz` | Creates 3 multiple-choice diagnostic questions aligned with the study plan. |
+| `human_feedback` | Pauses execution via `interrupt()` to collect user satisfaction feedback. |
+
+### Conditional Edges
+
+| From | Router | Routing Logic |
+|---|---|---|
+| `plan_agent` | `route_plan` | If the LLM made `tool_calls` → `tools` node. Otherwise → `generate_quiz`. |
+| `human_feedback` | `route_feedback` | If user responds `"yes"` → `END`. Otherwise → `plan_agent` (re-plan with fresh web search). |
+
+### Tool Integration
+
+**`web_search`** — registered as a LangGraph tool via `@tool` decorator + `ToolNode`.
+
+- Internally calls OpenAI Responses API with `web_search_preview` to find up-to-date learning resources.
+- The LLM decides whether to invoke it based on the planning context (not hardcoded).
+- On retry (user unsatisfied), `RemoveMessage` clears previous conversation so `plan_agent` starts a fresh search.
+
+### Human-in-the-Loop (Interrupt / Resume)
+
+- `MemorySaver` checkpointer persists graph state across pauses.
+- `interrupt()` inside `human_feedback` node halts execution and surfaces a prompt.
+- `Command(resume=user_input)` resumes the graph with the user's response.
+- A `while` loop in the notebook driver handles the interrupt-resume cycle via `graph.get_state()`.
+
+### State
+
+```python
+class State(TypedDict):
+    subject: str                              # Input: subject to study
+    level: str                                # Input: self-reported level
+    diagnosis: str                            # Output from diagnose_level
+    study_plan: str                           # Output from plan_agent
+    quiz: str                                 # Output from generate_quiz
+    feedback: str                             # User feedback from interrupt
+    messages: Annotated[list, add_messages]   # LLM ⟷ tool conversation history
+```
