@@ -72,19 +72,19 @@ START → diagnose_level → plan_agent ⟷ tools → generate_quiz → human_fe
 
 ### Nodes
 
-| Node | Description |
-|---|---|
-| `diagnose_level` | Diagnoses the student's current level based on subject and self-reported proficiency using `gpt-4o-mini`. |
-| `plan_agent` | Generates a personalized 1-week study plan. Uses `ChatOpenAI.bind_tools()` so the LLM autonomously decides when to call `web_search` for real learning resources. |
-| `tools` | A `ToolNode` that executes tool calls made by `plan_agent`. Routes back to `plan_agent` after execution. |
-| `generate_quiz` | Creates 3 multiple-choice diagnostic questions aligned with the study plan. |
-| `human_feedback` | Pauses execution via `interrupt()` to collect user satisfaction feedback. |
+| Node             | Description                                                                                                                                                       |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `diagnose_level` | Diagnoses the student's current level based on subject and self-reported proficiency using `gpt-4o-mini`.                                                         |
+| `plan_agent`     | Generates a personalized 1-week study plan. Uses `ChatOpenAI.bind_tools()` so the LLM autonomously decides when to call `web_search` for real learning resources. |
+| `tools`          | A `ToolNode` that executes tool calls made by `plan_agent`. Routes back to `plan_agent` after execution.                                                          |
+| `generate_quiz`  | Creates 3 multiple-choice diagnostic questions aligned with the study plan.                                                                                       |
+| `human_feedback` | Pauses execution via `interrupt()` to collect user satisfaction feedback.                                                                                         |
 
 ### Conditional Edges
 
-| From | Router | Routing Logic |
-|---|---|---|
-| `plan_agent` | `route_plan` | If the LLM made `tool_calls` → `tools` node. Otherwise → `generate_quiz`. |
+| From             | Router           | Routing Logic                                                                               |
+| ---------------- | ---------------- | ------------------------------------------------------------------------------------------- |
+| `plan_agent`     | `route_plan`     | If the LLM made `tool_calls` → `tools` node. Otherwise → `generate_quiz`.                   |
 | `human_feedback` | `route_feedback` | If user responds `"yes"` → `END`. Otherwise → `plan_agent` (re-plan with fresh web search). |
 
 ### Tool Integration
@@ -114,3 +114,42 @@ class State(TypedDict):
     feedback: str                             # User feedback from interrupt
     messages: Annotated[list, add_messages]   # LLM ⟷ tool conversation history
 ```
+
+# Education Agent: Advanced Features + Streamlit
+
+- 오늘의 강의: AI Agents Masterclass: From #18.5 to #19.4
+- 오늘의 과제: 아래 두 개의 과제를 각 지시사항에 따라 수행합니다.
+
+## - 과제1
+
+- Education Agent에 고급 패턴을 적용하고 Streamlit UI를 추가하세요!
+- 최소 하나의 고급 패턴을 선택하세요
+
+### Option A: 멀티 에이전트 아키텍처
+
+- 전문 에이전트로 분리:
+
+```
+[Supervisor Agent]
+       ↓
+┌──────┼──────┐
+↓      ↓      ↓
+[Quiz] [Tutor] [Researcher]
+```
+
+### Option B: 워크플로우 아키텍처
+
+- 프롬프트 체이닝(Prompt Chaining)
+- 병렬 처리(Parallelization)
+- Orchestrator-Workers
+
+### Option C: 테스트
+
+- PyTest를 활용한 노드 테스트
+- AI-as-judge 평가
+
+### 요구사항
+
+- 최소 1개의 고급 패턴을 구현하세요.
+- Streamlit UI를 추가하세요 (기본 채팅 인터페이스).
+- 에이전트가 처음부터 끝까지 작동해야 합니다.
