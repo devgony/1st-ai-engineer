@@ -3,9 +3,11 @@ from main import graph
 from langgraph.types import Command
 import uuid
 
-st.set_page_config(page_title="English Speaking Practice", page_icon="🎤", layout="wide")
+st.set_page_config(
+    page_title="English Speaking Practice", page_icon="🎤", layout="wide"
+)
 st.title("🎤 English Speaking Practice")
-st.caption("TOEIC Speaking / OPIc style picture description practice")
+st.caption("OPIc / TOEIC Speaking style picture description practice")
 
 if "thread_id" not in st.session_state:
     st.session_state.thread_id = str(uuid.uuid4())
@@ -32,7 +34,11 @@ elif st.session_state.step == "record":
     image_dir = state.values.get("image_dir")
 
     if image_dir:
-        st.image(image_dir, caption="Describe this image in English", use_container_width=True)
+        st.image(
+            image_dir,
+            caption="Describe this image in English",
+            use_container_width=True,
+        )
 
     st.divider()
     st.markdown("**Record your description** (up to 60 seconds)")
@@ -72,6 +78,15 @@ elif st.session_state.step == "result":
     st.write(values.get("recommendation", ""))
 
     st.divider()
-    if st.button("🔄 Try Again", type="primary"):
-        reset()
-        st.rerun()
+
+    col_a, col_b = st.columns(2)
+    with col_a:
+        if st.button("🔄 Re-generate", type="secondary"):
+            with st.spinner("Re-generating corrections and ideal answer..."):
+                graph.invoke(Command(resume=True), config)
+            st.rerun()
+    with col_b:
+        if st.button("✅ Try Again", type="primary"):
+            graph.invoke(Command(resume=False), config)
+            reset()
+            st.rerun()
