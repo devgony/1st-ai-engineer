@@ -24,10 +24,13 @@ def reset():
 if st.session_state.step == "start":
     st.markdown("Press the button to generate a practice image.")
     if st.button("🖼️ Generate Image", type="primary"):
-        with st.spinner("Generating image..."):
-            graph.invoke({}, config)
-        st.session_state.step = "record"
-        st.rerun()
+        try:
+            with st.spinner("Generating image..."):
+                graph.invoke({}, config)
+            st.session_state.step = "record"
+            st.rerun()
+        except Exception as e:
+            st.error(f"Failed to generate image. Please try again.\n\n`{e}`")
 
 elif st.session_state.step == "record":
     state = graph.get_state(config)
@@ -48,11 +51,13 @@ elif st.session_state.step == "record":
         st.audio(audio)
         audio_bytes = audio.read()
 
-        with st.spinner("Transcribing and analyzing your answer..."):
-            graph.invoke(Command(resume=audio_bytes), config)
-
-        st.session_state.step = "result"
-        st.rerun()
+        try:
+            with st.spinner("Transcribing and analyzing your answer..."):
+                graph.invoke(Command(resume=audio_bytes), config)
+            st.session_state.step = "result"
+            st.rerun()
+        except Exception as e:
+            st.error(f"Failed to process your recording. Please try again.\n\n`{e}`")
 
 elif st.session_state.step == "result":
     state = graph.get_state(config)
@@ -91,11 +96,17 @@ elif st.session_state.step == "result":
     col_a, col_b = st.columns(2)
     with col_a:
         if st.button("🔄 New Correction & Ideal Answer", type="secondary"):
-            with st.spinner("Generating new correction and ideal answer..."):
-                graph.invoke(Command(resume=True), config)
-            st.rerun()
+            try:
+                with st.spinner("Generating new correction and ideal answer..."):
+                    graph.invoke(Command(resume=True), config)
+                st.rerun()
+            except Exception as e:
+                st.error(f"Failed to re-generate. Please try again.\n\n`{e}`")
     with col_b:
         if st.button("✅ Try Again", type="primary"):
-            graph.invoke(Command(resume=False), config)
+            try:
+                graph.invoke(Command(resume=False), config)
+            except Exception:
+                pass
             reset()
             st.rerun()
