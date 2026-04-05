@@ -18,4 +18,7 @@ dependencies = [
 ]
 
 [dependency-groups]
-dev = ["ipykernel>=6.30.1"]
+dev = ["ipykernel>=6.30.1", "pytest>=8.0.0"]
+
+[tool.pytest.ini_options]
+markers = ["evaluation: AI-as-judge tests requiring OPENAI_API_KEY (deselect with -m 'not evaluation')"]
