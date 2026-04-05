@@ -1,3 +1,4 @@
+import struct
 import pytest
 from unittest.mock import MagicMock, patch
 
@@ -5,6 +6,7 @@ from langgraph.graph import END
 
 from main import (
     State,
+    speed_up_wav,
     transcribe,
     search_references,
     correct_syntax,
@@ -15,11 +17,26 @@ from main import (
 )
 
 
+def _make_wav_bytes(sample_rate: int = 16000, num_samples: int = 100) -> bytes:
+    channels = 1
+    bits_per_sample = 16
+    byte_rate = sample_rate * channels * bits_per_sample // 8
+    block_align = channels * bits_per_sample // 8
+    data_size = num_samples * block_align
+    header = struct.pack(
+        "<4sI4s4sIHHIIHH4sI",
+        b"RIFF", 36 + data_size, b"WAVE", b"fmt ", 16,
+        1, channels, sample_rate, byte_rate, block_align, bits_per_sample,
+        b"data", data_size,
+    )
+    return header + b"\x00" * data_size
+
+
 @pytest.fixture
 def base_state() -> State:
     return {
         "image_dir": "",
-        "audio_bytes": b"fake-audio-data",
+        "audio_bytes": _make_wav_bytes(),
         "transcription": "",
         "search_results": "",
         "corrections": [],
@@ -45,6 +62,57 @@ def image_state(transcribed_state, tmp_path) -> State:
         **transcribed_state,
         "image_dir": str(img_path),
     }
+
+
+class TestSpeedUpWav:
+    def _make_wav(self, sample_rate: int = 16000) -> bytes:
+        num_samples = 100
+        channels = 1
+        bits_per_sample = 16
+        byte_rate = sample_rate * channels * bits_per_sample // 8
+        block_align = channels * bits_per_sample // 8
+        data_size = num_samples * block_align
+        header = struct.pack(
+            "<4sI4s4sIHHIIHH4sI",
+            b"RIFF",
+            36 + data_size,
+            b"WAVE",
+            b"fmt ",
+            16,
+            1,
+            channels,
+            sample_rate,
+            byte_rate,
+            block_align,
+            bits_per_sample,
+            b"data",
+            data_size,
+        )
+        return header + b"\x00" * data_size
+
+    def test_doubles_sample_rate(self):
+        wav = self._make_wav(16000)
+        result = speed_up_wav(wav, factor=2)
+        new_rate = struct.unpack_from("<I", result, 24)[0]
+        assert new_rate == 32000
+
+    def test_doubles_byte_rate(self):
+        wav = self._make_wav(16000)
+        original_byte_rate = struct.unpack_from("<I", wav, 28)[0]
+        result = speed_up_wav(wav, factor=2)
+        new_byte_rate = struct.unpack_from("<I", result, 28)[0]
+        assert new_byte_rate == original_byte_rate * 2
+
+    def test_preserves_audio_data(self):
+        wav = self._make_wav(16000)
+        result = speed_up_wav(wav, factor=2)
+        assert len(result) == len(wav)
+
+    def test_custom_factor(self):
+        wav = self._make_wav(16000)
+        result = speed_up_wav(wav, factor=3)
+        new_rate = struct.unpack_from("<I", result, 24)[0]
+        assert new_rate == 48000
 
 
 class TestTranscribe:

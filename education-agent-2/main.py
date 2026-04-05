@@ -8,6 +8,7 @@ from langgraph.checkpoint.memory import InMemorySaver
 from typing import Annotated, TypedDict
 from dotenv import load_dotenv
 import operator
+import struct
 import base64
 import io
 import os
@@ -63,9 +64,19 @@ def record_voice(state: State):
     return {"audio_bytes": audio_bytes}
 
 
+def speed_up_wav(wav_bytes: bytes, factor: int = 2) -> bytes:
+    data = bytearray(wav_bytes)
+    sample_rate = struct.unpack_from("<I", data, 24)[0]
+    byte_rate = struct.unpack_from("<I", data, 28)[0]
+    struct.pack_into("<I", data, 24, sample_rate * factor)
+    struct.pack_into("<I", data, 28, byte_rate * factor)
+    return bytes(data)
+
+
 def transcribe(state: State):
     client = OpenAI()
-    audio_bio = io.BytesIO(state["audio_bytes"])
+    fast_audio = speed_up_wav(state["audio_bytes"])
+    audio_bio = io.BytesIO(fast_audio)
     audio_bio.name = "audio.wav"
     transcription = client.audio.transcriptions.create(
         model="whisper-1",
