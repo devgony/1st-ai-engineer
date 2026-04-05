@@ -63,26 +63,35 @@ elif st.session_state.step == "result":
 
     st.divider()
 
-    col1, col2 = st.columns(2)
-    with col1:
-        st.subheader("📝 Your Answer")
-        st.write(values.get("transcription", ""))
-
-    with col2:
-        st.subheader("✅ Corrections")
-        st.write(values.get("correction", ""))
+    st.subheader("📝 Your Answer")
+    st.write(values.get("transcription", ""))
 
     st.divider()
 
-    st.subheader("🌟 Ideal Answer")
-    st.write(values.get("recommendation", ""))
+    corrections = values.get("corrections", [])
+    recommendations = values.get("recommendations", [])
+
+    for i in range(len(corrections) - 1, -1, -1):
+        version = i + 1
+        is_latest = i == len(corrections) - 1
+        label = f"Version {version} (Latest)" if is_latest else f"Version {version}"
+
+        with st.expander(label, expanded=is_latest):
+            col1, col2 = st.columns(2)
+            with col1:
+                st.markdown("**✅ Corrections**")
+                st.write(corrections[i])
+            with col2:
+                st.markdown("**🌟 Ideal Answer**")
+                if i < len(recommendations):
+                    st.write(recommendations[i])
 
     st.divider()
 
     col_a, col_b = st.columns(2)
     with col_a:
-        if st.button("🔄 Re-generate", type="secondary"):
-            with st.spinner("Re-generating corrections and ideal answer..."):
+        if st.button("🔄 New Correction & Ideal Answer", type="secondary"):
+            with st.spinner("Generating new correction and ideal answer..."):
                 graph.invoke(Command(resume=True), config)
             st.rerun()
     with col_b:

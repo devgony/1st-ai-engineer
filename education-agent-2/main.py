@@ -4,7 +4,8 @@ from langchain.chat_models import init_chat_model
 from langchain_core.messages import HumanMessage
 from langgraph.types import interrupt
 from langgraph.checkpoint.memory import InMemorySaver
-from typing import TypedDict
+from typing import Annotated, TypedDict
+import operator
 import base64
 import io
 import os
@@ -18,8 +19,8 @@ class State(TypedDict):
     image_dir: str
     audio_bytes: bytes
     transcription: str
-    correction: str
-    recommendation: str
+    corrections: Annotated[list[str], operator.add]
+    recommendations: Annotated[list[str], operator.add]
     regenerate: bool
 
 
@@ -91,7 +92,7 @@ def correct_syntax(state: State):
             )
         ]
     )
-    return {"correction": response.content}
+    return {"corrections": [response.content]}
 
 
 def recommend_ideal_answer(state: State):
@@ -122,7 +123,7 @@ def recommend_ideal_answer(state: State):
             )
         ]
     )
-    return {"recommendation": response.content}
+    return {"recommendations": [response.content]}
 
 
 def ask_regenerate(state: State):
