@@ -20,6 +20,7 @@ class State(TypedDict):
     transcription: str
     correction: str
     recommendation: str
+    regenerate: bool
 
 
 def generate_image(state: State):
@@ -124,6 +125,17 @@ def recommend_ideal_answer(state: State):
     return {"recommendation": response.content}
 
 
+def ask_regenerate(state: State):
+    answer = interrupt("Would you like to re-generate the correction and ideal answer?")
+    return {"regenerate": answer}
+
+
+def should_regenerate(state: State):
+    if state.get("regenerate"):
+        return "correct_syntax"
+    return END
+
+
 memory = InMemorySaver()
 
 graph_builder = StateGraph(State)
@@ -133,12 +145,14 @@ graph_builder.add_node("record_voice", record_voice)
 graph_builder.add_node("transcribe", transcribe)
 graph_builder.add_node("correct_syntax", correct_syntax)
 graph_builder.add_node("recommend_ideal_answer", recommend_ideal_answer)
+graph_builder.add_node("ask_regenerate", ask_regenerate)
 
 graph_builder.add_edge(START, "generate_image")
 graph_builder.add_edge("generate_image", "record_voice")
 graph_builder.add_edge("record_voice", "transcribe")
 graph_builder.add_edge("transcribe", "correct_syntax")
 graph_builder.add_edge("correct_syntax", "recommend_ideal_answer")
-graph_builder.add_edge("recommend_ideal_answer", END)
+graph_builder.add_edge("recommend_ideal_answer", "ask_regenerate")
+graph_builder.add_conditional_edges("ask_regenerate", should_regenerate)
 
 graph = graph_builder.compile(checkpointer=memory, name="english-education-agent")
