@@ -2,23 +2,28 @@ from openai import OpenAI
 from langgraph.graph import StateGraph, START, END
 from langchain.chat_models import init_chat_model
 from langchain_core.messages import HumanMessage
+from langchain_tavily import TavilySearch
 from langgraph.types import interrupt
 from langgraph.checkpoint.memory import InMemorySaver
 from typing import Annotated, TypedDict
+from dotenv import load_dotenv
 import operator
 import base64
 import io
 import os
 from datetime import datetime
 
+load_dotenv()
 
 llm = init_chat_model("openai:gpt-4o-mini")
+tavily = TavilySearch(max_results=3)
 
 
 class State(TypedDict):
     image_dir: str
     audio_bytes: bytes
     transcription: str
+    search_results: str
     corrections: Annotated[list[str], operator.add]
     recommendations: Annotated[list[str], operator.add]
     regenerate: bool
@@ -75,7 +80,18 @@ def transcribe(state: State):
     return {"transcription": transcription.text}
 
 
+def search_references(state: State):
+    query = (
+        "TOEIC Speaking OPIc picture description "
+        "scoring rubric vocabulary and expression tips "
+        f"for: {state['transcription'][:200]}"
+    )
+    results = tavily.invoke({"query": query})
+    return {"search_results": str(results)}
+
+
 def correct_syntax(state: State):
+    references = state.get("search_results", "")
     response = llm.invoke(
         [
             HumanMessage(
@@ -87,6 +103,9 @@ def correct_syntax(state: State):
                     "2. Vocabulary suggestions for more natural expression\n"
                     "3. Sentence structure improvements\n\n"
                     f"Transcription:\n{state['transcription']}\n\n"
+                    f"Reference materials from web search:\n{references}\n\n"
+                    "Use the reference materials to provide more accurate and "
+                    "up-to-date suggestions. "
                     "Provide corrections in a clear, structured format."
                 )
             )
@@ -144,6 +163,7 @@ graph_builder = StateGraph(State)
 graph_builder.add_node("generate_image", generate_image)
 graph_builder.add_node("record_voice", record_voice)
 graph_builder.add_node("transcribe", transcribe)
+graph_builder.add_node("search_references", search_references)
 graph_builder.add_node("correct_syntax", correct_syntax)
 graph_builder.add_node("recommend_ideal_answer", recommend_ideal_answer)
 graph_builder.add_node("ask_regenerate", ask_regenerate)
@@ -151,7 +171,8 @@ graph_builder.add_node("ask_regenerate", ask_regenerate)
 graph_builder.add_edge(START, "generate_image")
 graph_builder.add_edge("generate_image", "record_voice")
 graph_builder.add_edge("record_voice", "transcribe")
-graph_builder.add_edge("transcribe", "correct_syntax")
+graph_builder.add_edge("transcribe", "search_references")
+graph_builder.add_edge("search_references", "correct_syntax")
 graph_builder.add_edge("correct_syntax", "recommend_ideal_answer")
 graph_builder.add_edge("recommend_ideal_answer", "ask_regenerate")
 graph_builder.add_conditional_edges("ask_regenerate", should_regenerate)
