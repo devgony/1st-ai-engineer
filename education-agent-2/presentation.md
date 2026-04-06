@@ -1,21 +1,27 @@
 ---
 title: English speaking practice Agent
-sub_title: OPIc / TOEIC Speaking Picture Description App
+sub_title: OPIc / TOEIC Speaking picture description practice app
 author: henry
 options:
   end_slide_shorthand: true
 ---
 
-# English Speaking Practice
+# English speaking practice Agent
 
 OPIc / TOEIC Speaking picture description practice app
 
 - LangGraph pipeline + Streamlit UI
 - Record voice → Transcribe → Correct → Recommend ideal answer
 
+![image:width:100%](./assets/main.png)
+
 ---
 
-# Pipeline
+# Graph Overview
+
+<!-- column_layout: [1, 2] -->
+
+<!-- column: 0 -->
 
 ```mermaid +render
 graph TD;
@@ -30,28 +36,23 @@ graph TD;
     G -. no .-> END([__end__])
 ```
 
----
-
-# Nodes
-
-<!-- column_layout: [1, 1] -->
-
-<!-- column: 0 -->
-
-| Node              | API            |
-| ----------------- | -------------- |
-| generate_image    | `gpt-image-1`  |
-| record_voice      | `interrupt()`  |
-| transcribe        | `whisper-1`    |
-| search_references | `TavilySearch` |
-
 <!-- column: 1 -->
 
-| Node                   | API                    |
-| ---------------------- | ---------------------- |
-| correct_syntax         | `gpt-4o-mini`          |
-| recommend_ideal_answer | `gpt-4o-mini` (vision) |
-| ask_regenerate         | `interrupt()`          |
+**generate_image**: GPT Image generates a daily scene
+
+**record_voice**: pauses graph, user records via Streamlit
+
+**transcribe**: Whisper converts speech to text
+
+- 2x speed-up by modifying WAV sample rate header
+
+**search_references**: Tips and grading criteria by API(Tavily) tool
+
+**correct_syntax**: grammar, vocabulary, structure fixes
+
+**recommend_ideal_answer**: vision model writes ideal answer
+
+**ask_regenerate**: user decides to loop or finish
 
 <!-- reset_layout -->
 
