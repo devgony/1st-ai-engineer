@@ -58,21 +58,19 @@ graph TD;
 
 ---
 
-# Key Patterns
+# Product demo
 
-- **Prompt Chaining** — sequential node execution
-- **Human-in-the-loop** — `interrupt()` for voice input & regeneration
-- **Conditional Loop** — `ask_regenerate` routes back to `correct_syntax`
-- **Tool Integration** — Tavily web search for scoring rubrics
+- [https://to-be-frank.streamlit.app]
 
-<!-- pause -->
+<!-- reset_layout -->
 
-**State accumulation** via `Annotated[list, operator.add]`
+---
 
-```python
-corrections: Annotated[list[str], operator.add]
-recommendations: Annotated[list[str], operator.add]
-```
+# Planned improvements
+
+- Cache images & transcriptions to cut token cost and speed up responses
+- Let users pick a scene category (cafe, office, park, airport, etc.)
+- Let users choose answer length and difficulty (30s/45s/60s, beginner to advanced)
 
 ---
 
