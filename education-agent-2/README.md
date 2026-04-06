@@ -32,15 +32,15 @@ ask_regenerate              ← interrupt() — 재생성 여부 확인
   └─ no ───▶ END
 ```
 
-| Node | API | Description |
-|---|---|---|
-| `generate_image` | `gpt-image-1` | TOEIC/OPIc 스타일 일상 장면 이미지 생성 (3-6명, 구체적 장소) |
-| `record_voice` | `interrupt()` | 그래프 일시정지 → Streamlit `st.audio_input`으로 녹음 |
-| `transcribe` | `whisper-1` | 음성→텍스트 전사 (망설임/필러 포함) |
-| `search_references` | `TavilySearch` | 전사 기반 TOEIC/OPIc 채점 기준, 어휘 팁 웹 검색 |
-| `correct_syntax` | `gpt-4o-mini` | 문법 교정 + 어휘 제안 + 문장구조 개선 (검색 결과 참조) |
-| `recommend_ideal_answer` | `gpt-4o-mini` (vision) | 이미지 기반 45-60초 모범답안 생성 |
-| `ask_regenerate` | `interrupt()` | 재생성 여부 확인 → conditional edge로 루프 또는 종료 |
+| Node                     | API                    | Description                                                  |
+| ------------------------ | ---------------------- | ------------------------------------------------------------ |
+| `generate_image`         | `gpt-image-1`          | TOEIC/OPIc 스타일 일상 장면 이미지 생성 (3-6명, 구체적 장소) |
+| `record_voice`           | `interrupt()`          | 그래프 일시정지 → Streamlit `st.audio_input`으로 녹음        |
+| `transcribe`             | `whisper-1`            | 음성→텍스트 전사 (망설임/필러 포함)                          |
+| `search_references`      | `TavilySearch`         | 전사 기반 TOEIC/OPIc 채점 기준, 어휘 팁 웹 검색              |
+| `correct_syntax`         | `gpt-4o-mini`          | 문법 교정 + 어휘 제안 + 문장구조 개선 (검색 결과 참조)       |
+| `recommend_ideal_answer` | `gpt-4o-mini` (vision) | 이미지 기반 45-60초 모범답안 생성                            |
+| `ask_regenerate`         | `interrupt()`          | 재생성 여부 확인 → conditional edge로 루프 또는 종료         |
 
 `corrections`/`recommendations`는 `Annotated[list, operator.add]`로 재생성 시 누적 → 버전별 비교 가능.
 
@@ -64,7 +64,7 @@ streamlit run app.py
 
 - [x] LangGraph를 사용하세요.
 - [x] 최소 2개의 작동하는 노드를 구현하세요.
-- [ ] Jupyter Notebook에 설계 문서와 코드를 포함하세요.
+- [x] Jupyter Notebook에 설계 문서와 코드를 포함하세요.
 - [x] 최소 3개의 노드를 구현하세요.
 - [x] 최소 1개의 Conditional Edge를 구현하세요. (사용자 입력에 따라 다른 경로)
 
@@ -85,7 +85,7 @@ streamlit run app.py
 ```
 
 - [x] 최소 1개의 Tool을 연동하세요. (웹 검색, 파일 검색, 또는 커스텀)
-- [ ] 최소 하나의 고급 패턴을 선택하세요
+- [x] 최소 하나의 고급 패턴을 선택하세요
 
 ```text
 Option A: 멀티 에이전트 아키텍처
@@ -120,4 +120,3 @@ Option C: 테스트
 - [ ] 로딩 상태 표시
 - [ ] 사용자를 위한 명확한 안내
 - [ ] 프로젝트 설명이 포함된 README.md
-

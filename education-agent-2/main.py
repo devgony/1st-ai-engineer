@@ -163,8 +163,8 @@ def ask_regenerate(state: State):
 
 def should_regenerate(state: State):
     if state.get("regenerate"):
-        return "correct_syntax"
-    return END
+        return "yes"
+    return "no"
 
 
 memory = InMemorySaver()
@@ -186,6 +186,10 @@ graph_builder.add_edge("transcribe", "search_references")
 graph_builder.add_edge("search_references", "correct_syntax")
 graph_builder.add_edge("correct_syntax", "recommend_ideal_answer")
 graph_builder.add_edge("recommend_ideal_answer", "ask_regenerate")
-graph_builder.add_conditional_edges("ask_regenerate", should_regenerate)
+graph_builder.add_conditional_edges(
+    "ask_regenerate",
+    should_regenerate,
+    {"yes": "correct_syntax", "no": END},
+)
 
 graph = graph_builder.compile(checkpointer=memory, name="english-education-agent")
